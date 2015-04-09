@@ -2,8 +2,8 @@
 import akka.actor.Actor
 object Coordinator extends Actor{
   def receive = {
-    case (x: Int, y: Int, colour: Colour) => set(x, y, colour)
-    case (im: Image, of: String) => init(im, of)
+    case (x: Int, y: Int, colour: Colour) => set(x, y, colour)  //receive the colour for a pixel from actors in Scene
+    case (im: Image, of: String) => init(im, of) // initialise Coordinator 
     case "print" => print
   }
   def init(im: Image, of: String) = {
@@ -21,12 +21,12 @@ object Coordinator extends Actor{
   def set(x: Int, y: Int, c: Colour) = {
     image(x, y) = c
     waiting -= 1
-    if (waiting == 0) print
+    if (waiting == 0) print //print the image once the colour for all the pixels are known
   }
 
   def print = {
     //assert(waiting == 0)
     image.print(outfile)
-    context.system.shutdown()
+    context.system.shutdown()   //shut down the actor after printing the image
   }
 }
