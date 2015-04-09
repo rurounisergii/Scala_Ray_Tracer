@@ -52,6 +52,8 @@ class Scene private(val objects: List[Shape], val lights: List[Light]) {
   val angle = 90f // viewing angle
   //val angle = 180f // fisheye
 
+  //traceImage modified to take ActorRef and ActorSystem so actors made here can send the results of their computation
+  //to the Coordinator
   def traceImage(width: Int, height: Int, coordinator: ActorRef, system: ActorSystem) {
 
     val frustum = (.5 * angle * math.Pi / 180).toFloat
@@ -62,15 +64,15 @@ class Scene private(val objects: List[Shape], val lights: List[Light]) {
     // Anti-aliasing parameter -- divide each pixel into sub-pixels and
     // average the results to get smoother images.
     val ss = Trace.AntiAliasingFactor
-
+    
+    //the class for the actors that will calculate the colour of each pixel in a row is made as an inner class
+    //of the traceImage method so it is in the correct scope to have access to all the variables in traceImage
+    //needed to calculate the colour of a pixel
     import akka.actor._
     class colourCalculator extends Actor{
       def receive = {
-        case (rowNumber:Int) => {
-          for (x <- 0 until width) {
-
-
-            // This loop body can be sequential.
+        case (rowNumber:Int) => { //receives a rownumber of the image
+          for (x <- 0 until width) { //iterates over each pixel in the row and calculates its colour
             var colour = Colour.black
 
             for (dx <- 0 until ss) {
@@ -93,14 +95,15 @@ class Scene private(val objects: List[Shape], val lights: List[Light]) {
             if (Vector(colour.r, colour.g, colour.b).norm > 1)
               Trace.lightCount += 1
 
-            coordinator !(x, rowNumber, colour)
+            coordinator !(x, rowNumber, colour) //send the colour of the pixel to the coordinator
           }
-          context.stop(self)
+          context.stop(self) //once all the pixels in a row have been calculated, the actor stops itself
         }
       }
     }
 
-    for (y <- 0 until height) {
+  // for each row in the image, make an actor and send it a message so it calculates the colour of each pixel in their row
+    for (y <- 0 until height) { 
       val randomActor = system.actorOf(Props(new colourCalculator), y.toString)
       randomActor ! y
     }
