@@ -29,11 +29,12 @@ object Trace{
   def render(scene: Scene, outfile: String, width: Int, height: Int) = {
     val image = new Image(width, height)
 
+    
     import akka.actor._
-    val sys = ActorSystem("coordSys")
-    val coord = sys.actorOf(Props(Coordinator), "coord")
-    coord ! (image, outfile)  //init coordinator
-    scene.traceImage(width, height, coord, sys)
+    val sys = ActorSystem("coordSys")    // make an ActorSystem
+    val coord = sys.actorOf(Props(Coordinator), "coord") //make a coordinator Actor
+    coord ! (image, outfile)  //init coordinator  
+    scene.traceImage(width, height, coord, sys) 
 
   }
 }
